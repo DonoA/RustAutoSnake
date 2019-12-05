@@ -2,7 +2,6 @@ use crate::direction::Direction;
 use crate::point::Point;
 
 pub struct Snake {
-    facing: Direction,
     segment_dirs: Vec<Direction>,
     head: Point,
 }
@@ -35,10 +34,19 @@ fn get_snake_seg(curr: &Direction, next: Option<&Direction>) -> u64 {
 impl Snake {
     pub fn new(head: Point) -> Snake {
         Snake {
-            facing: Direction::UP,
-            segment_dirs: vec![Direction::LEFT; 1500],
+            segment_dirs: vec![Direction::LEFT; 4000],
             head: head,
         }
+    }
+
+    pub fn on_snake(&self, pt: Point) -> bool {
+        let mut on = false;
+        self.for_each_segment(|other_pt, i| {
+            if other_pt == pt {
+                on = true;
+            }
+        });
+        return on;
     }
 
     pub fn for_each_segment<F: FnMut(Point, usize)>(&self, mut f: F) {

@@ -76,12 +76,14 @@ impl Game {
             0,
             0,
             &format!(
-                "Apple={:?}, SnakeLen={:?}, Board={}x{}, Speed={}",
+                "Apple={:?}, SnakeLen={:?}, Board={}x{}, Speed={}, HamV={}, AppleV={}",
                 self.apple,
                 self.snake.size(),
                 self.board.get_width(),
                 self.board.get_height(),
-                self.tick_speed
+                self.tick_speed,
+                self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap(),
+                self.board.get(self.apple.x, self.apple.y).unwrap()
             ),
         );
         self.draw_border();
@@ -124,13 +126,8 @@ impl Game {
         ncurses::mvhline(self.min_y - 1, self.max_x + 1, ncurses::ACS_URCORNER(), 1);
     }
 
-    fn check_dir(&self, currid: &u32, dir: &Direction) -> bool {
-        let test_pt = match dir {
-            Direction::UP => { self.snake.get_head().add(0, -1) }
-            Direction::RIGHT => { self.snake.get_head().add(1, 0) }
-            Direction::DOWN => { self.snake.get_head().add(0, 1) }
-            Direction::LEFT => { self.snake.get_head().add(-1, 0) }
-        };
+    fn is_dir_next(&self, currid: &u32, dir: &Direction) -> bool {
+        let test_pt = self.snake.get_head().dir_adj(dir);
 
         if let Some(other) = self.board.get(test_pt.x, test_pt.y) {
             if other == &(currid + 1) {
@@ -140,26 +137,68 @@ impl Game {
         return false;
     }
 
-    pub fn get_next_cycle_dir(&self) -> Direction {
+    pub fn move_snake(&mut self) {
         let currid = *self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap();
+        let tail_pos = self.snake.get_tail();
+        let tail_id = *self.board.get(tail_pos.x, tail_pos.y).unwrap_or(&1);
+        let apple_val = *self.board.get(self.apple.x, self.apple.y).unwrap();
+        let board_max = self.board.get_width() * self.board.get_height();
+
+        let mut closest_path: Option<(u32, Direction)> = None;
         for dir in Direction::all() {
-            if self.check_dir(&currid, dir) {
-                return *dir;
+            let test_pt = self.snake.get_head().dir_adj(dir);
+
+            if let Some(other) = self.board.get(test_pt.x, test_pt.y) {
+                // don't go past apple 
+                if apple_val > currid && other > &apple_val {
+                    continue;
+                }
+                
+                //    dont go backwards    dont enter small loops
+                if other < &currid || other - currid > (self.snake.size()/10) as u32 {
+                    continue;
+                }
+
+                // get largest value
+                if closest_path.is_some() && &closest_path.unwrap().0 > other {
+                    continue;
+                }
+
+                // try not to turn into self
+                if self.snake.on_snake(test_pt) {
+                    continue;
+                }
+
+                if mod_dist(*other as i32, tail_id as i32, board_max as i32) < (self.snake.size()/10) as i32 {
+                    continue;
+                }
+
+                closest_path = Some((*other, *dir));
             }
         }
 
+        if closest_path.is_some() {
+            self.snake.move_dir(&closest_path.unwrap().1);
+            return;
+        }
+
+        // Check for next num in cycle
         for dir in Direction::all() {
-            if self.check_dir(&0, dir) {
-                return *dir;
+            if self.is_dir_next(&currid, dir) {
+                self.snake.move_dir(dir);
+                return;
+            }
+        }
+
+        // if we hit end, find pt 1
+        for dir in Direction::all() {
+            if self.is_dir_next(&0, dir) {
+                self.snake.move_dir(dir);
+                return;
             }
         }
 
         panic!("Reach end!");
-    }
-
-    pub fn move_snake(&mut self) {
-        let ideal_move = self.get_next_cycle_dir();
-        self.snake.move_dir(&ideal_move);
     }
 
     fn random_point(&self) -> Point {
@@ -186,4 +225,20 @@ impl Game {
         }
         return pos_point;
     }
+}
+
+fn true_mod(x: i32, mut m: i32) -> i32 {
+    if m < 0 {
+        m = -m;
+    }
+    let r = x % m;
+    return if r < 0 {
+        r + m
+    } else {
+        r
+    };
+}
+
+fn mod_dist(a: i32, b: i32, m: i32) -> i32 {
+    std::cmp::min(true_mod(a - b, m), true_mod(b - a, m))
 }
