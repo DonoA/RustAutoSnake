@@ -3,6 +3,7 @@ mod snake;
 mod hamiltonian_matrix;
 mod point;
 mod direction;
+mod matrix;
 
 extern crate ncurses;
 extern crate num;
@@ -24,32 +25,35 @@ fn setup_ncurses() {
 }
 
 fn main() {
-    // setup_ncurses();
+    setup_ncurses();
 
-    /* Get the screen bounds. */
-    // let mut max_x = 0;
-    // let mut max_y = 0;
-    // getmaxyx(stdscr(), &mut max_y, &mut max_x);
+    let mut max_x = 0;
+    let mut max_y = 0;
+    getmaxyx(stdscr(), &mut max_y, &mut max_x);
 
-    // let mut game = Game::new(1, 2, max_x-2, max_y-2);
-    // let mut game = Game::new(1, 2, 30, 15);
-    let mut game = Game::new(0, 0, 20, 20);
+    if max_x % 2 == 0 {
+        max_x -= 1;
+    }
 
-    // loop {
-    //     game.draw();
+    if max_y % 2 != 0 {
+        max_y -= 1;
+    }
 
-    //     if !game.tick() {
-    //         break;
-    //     }
+    let mut game = Game::new(1, 2, max_x-2, max_y-2);
 
-    //     let ch = getch();
-    //     game.input(ch);
-    //     if ch == KEY_F(1) {
-    //         break;
-    //     }
-    // }
+    loop {
+        game.draw();
 
-    // endwin();
+        if !game.tick() {
+            break;
+        }
 
-    game.print_board();
+        let ch = getch();
+        game.input(ch);
+        if ch == KEY_F(1) {
+            break;
+        }
+    }
+
+    endwin();
 }

@@ -36,7 +36,7 @@ impl Snake {
     pub fn new(head: Point) -> Snake {
         Snake {
             facing: Direction::UP,
-            segment_dirs: vec![Direction::LEFT, Direction::LEFT, Direction::LEFT],
+            segment_dirs: vec![Direction::LEFT; 500],
             head: head,
         }
     }
@@ -56,16 +56,16 @@ impl Snake {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, min_x: i32, min_y: i32) {
         self.for_each_segment(|pt, i| {
             if i == 0 {
-                ncurses::mvhline(pt.y, pt.x, ncurses::ACS_BLOCK(), 1);
+                ncurses::mvhline(min_y + pt.y, min_x + pt.x, ncurses::ACS_BLOCK(), 1);
                 return;
             }
 
             let next_dir = self.segment_dirs.get(i);
             let to_print = get_snake_seg(&self.segment_dirs[i - 1], next_dir);
-            ncurses::mvhline(pt.y, pt.x, to_print, 1);
+            ncurses::mvhline(min_y + pt.y, min_x + pt.x, to_print, 1);
         });
     }
 
