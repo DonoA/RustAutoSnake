@@ -1,5 +1,5 @@
-use crate::point::Point;
 use crate::direction::Direction;
+use crate::point::Point;
 
 pub struct Snake {
     facing: Direction,
@@ -36,7 +36,7 @@ impl Snake {
     pub fn new(head: Point) -> Snake {
         Snake {
             facing: Direction::UP,
-            segment_dirs: vec![Direction::LEFT; 500],
+            segment_dirs: vec![Direction::LEFT; 1500],
             head: head,
         }
     }
@@ -91,8 +91,10 @@ impl Snake {
         };
     }
 
-    pub fn get_head(&self) -> &Point { &self.head }
-    pub fn get_tail(&self) -> Point { 
+    pub fn get_head(&self) -> &Point {
+        &self.head
+    }
+    pub fn get_tail(&self) -> Point {
         let mut tail = None;
         self.for_each_segment(|pt, i| {
             if i == self.segment_dirs.len() {
@@ -103,11 +105,12 @@ impl Snake {
         let tail = tail.expect("No Tail?");
         return tail;
     }
-    pub fn size(&self) -> usize { self.segment_dirs.len() }
+    pub fn size(&self) -> usize {
+        self.segment_dirs.len()
+    }
 
     pub fn expand(&mut self) {
         self.segment_dirs
             .push(self.segment_dirs.last().unwrap().oposite());
     }
-
 }

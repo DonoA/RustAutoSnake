@@ -11,6 +11,9 @@ pub struct Game {
     min_y: i32,
     max_x: i32,
     max_y: i32,
+
+    pub running: bool,
+    pub tick_speed: u32,
 }
 
 impl Game {
@@ -36,6 +39,9 @@ impl Game {
             min_y: min_y,
             max_x: max_x,
             max_y: max_y,
+
+            running: true,
+            tick_speed: 20,
         };
 
         gm.apple = gm.random_point();
@@ -64,16 +70,18 @@ impl Game {
     }
 
     pub fn draw(&self) {
+        ncurses::erase();
         // mvprintw(0, 0, "Currently Running Snake... Exit with F1");
         ncurses::mvprintw(
             0,
             0,
             &format!(
-                "Apple={:?}, SnakeLen={:?}, Board={}x{}",
+                "Apple={:?}, SnakeLen={:?}, Board={}x{}, Speed={}",
                 self.apple,
                 self.snake.size(),
                 self.board.get_width(),
                 self.board.get_height(),
+                self.tick_speed
             ),
         );
         self.draw_border();
@@ -116,33 +124,58 @@ impl Game {
         ncurses::mvhline(self.min_y - 1, self.max_x + 1, ncurses::ACS_URCORNER(), 1);
     }
 
-    pub fn input(&mut self, ch: i32) {
-        let currid = self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap();
-        if let Some(other) = self.board.get(self.snake.get_head().x, self.snake.get_head().y - 1) {
+    fn check_dir(&mut self, currid: &u32, dir: Direction) -> bool {
+        let test_pt = match dir {
+            Direction::UP => { self.snake.get_head().add(0, -1) }
+            Direction::RIGHT => { self.snake.get_head().add(1, 0) }
+            Direction::DOWN => { self.snake.get_head().add(0, 1) }
+            Direction::LEFT => { self.snake.get_head().add(-1, 0) }
+        };
+
+        if let Some(other) = self.board.get(test_pt.x, test_pt.y) {
             if other == &(currid + 1) {
-                self.snake.move_dir(&Direction::UP);
+                self.snake.move_dir(&dir);
+                return true;
             }
         }
 
-        if let Some(other) = self.board.get(self.snake.get_head().x + 1, self.snake.get_head().y) {
-            if other == &(currid + 1) {
-                self.snake.move_dir(&Direction::RIGHT);
-            }
+        return false;
+    }
+
+    pub fn move_snake(&mut self) {
+        let currid = *self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap();
+
+        if self.check_dir(&currid, Direction::UP) {
+            return;
         }
 
-        if let Some(other) = self.board.get(self.snake.get_head().x, self.snake.get_head().y + 1) {
-            if other == &(currid + 1) {
-                self.snake.move_dir(&Direction::DOWN);
-            }
+        if self.check_dir(&currid, Direction::RIGHT) {
+            return;
         }
 
-        if let Some(other) = self.board.get(self.snake.get_head().x - 1, self.snake.get_head().y) {
-            if other == &(currid + 1) {
-                self.snake.move_dir(&Direction::LEFT);
-            }
+        if self.check_dir(&currid, Direction::DOWN) {
+            return;
         }
 
-        ncurses::erase();
+        if self.check_dir(&currid, Direction::LEFT) {
+            return;
+        }
+
+        if self.check_dir(&0, Direction::UP) {
+            return;
+        }
+
+        if self.check_dir(&0, Direction::RIGHT) {
+            return;
+        }
+
+        if self.check_dir(&0, Direction::DOWN) {
+            return;
+        }
+
+        if self.check_dir(&0, Direction::LEFT) {
+            return;
+        }
     }
 
     fn random_point(&self) -> Point {
