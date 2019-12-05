@@ -124,7 +124,7 @@ impl Game {
         ncurses::mvhline(self.min_y - 1, self.max_x + 1, ncurses::ACS_URCORNER(), 1);
     }
 
-    fn check_dir(&mut self, currid: &u32, dir: Direction) -> bool {
+    fn check_dir(&self, currid: &u32, dir: &Direction) -> bool {
         let test_pt = match dir {
             Direction::UP => { self.snake.get_head().add(0, -1) }
             Direction::RIGHT => { self.snake.get_head().add(1, 0) }
@@ -134,48 +134,32 @@ impl Game {
 
         if let Some(other) = self.board.get(test_pt.x, test_pt.y) {
             if other == &(currid + 1) {
-                self.snake.move_dir(&dir);
                 return true;
             }
         }
-
         return false;
     }
 
-    pub fn move_snake(&mut self) {
+    pub fn get_next_cycle_dir(&self) -> Direction {
         let currid = *self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap();
-
-        if self.check_dir(&currid, Direction::UP) {
-            return;
+        for dir in Direction::all() {
+            if self.check_dir(&currid, dir) {
+                return *dir;
+            }
         }
 
-        if self.check_dir(&currid, Direction::RIGHT) {
-            return;
+        for dir in Direction::all() {
+            if self.check_dir(&0, dir) {
+                return *dir;
+            }
         }
 
-        if self.check_dir(&currid, Direction::DOWN) {
-            return;
-        }
+        panic!("Reach end!");
+    }
 
-        if self.check_dir(&currid, Direction::LEFT) {
-            return;
-        }
-
-        if self.check_dir(&0, Direction::UP) {
-            return;
-        }
-
-        if self.check_dir(&0, Direction::RIGHT) {
-            return;
-        }
-
-        if self.check_dir(&0, Direction::DOWN) {
-            return;
-        }
-
-        if self.check_dir(&0, Direction::LEFT) {
-            return;
-        }
+    pub fn move_snake(&mut self) {
+        let ideal_move = self.get_next_cycle_dir();
+        self.snake.move_dir(&ideal_move);
     }
 
     fn random_point(&self) -> Point {

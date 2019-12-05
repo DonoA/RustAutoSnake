@@ -6,7 +6,7 @@ mod direction;
 mod matrix;
 
 use crossbeam::channel::{unbounded, TryRecvError};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 use ncurses::*;
 use crate::game::Game;
 use std::thread;
@@ -66,7 +66,7 @@ fn main() {
         }
 
         if rev.is_empty() {
-            thread::yield_now();
+            thread::sleep_ms(1);
             continue;
         }
 

@@ -184,10 +184,9 @@ fn add_all_dirs(
 fn create_rand_prim_tree(width: usize, height: usize) -> Matrix<PrimTreeNode> {
     let weights = generate_rand_weights(width, height);
     let mut prim_nodes = generate_empty_prim_graph(width, height);
-    let mut current = Point::new(0, 0);
     let mut node_queue = BinaryHeap::new();
 
-    add_all_dirs(&current, &weights, &mut node_queue);
+    add_all_dirs(&Point::new(0, 0), &weights, &mut node_queue);
 
     loop {
         let next_conn = node_queue.pop();

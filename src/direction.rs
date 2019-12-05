@@ -7,6 +7,13 @@ pub enum Direction {
     RIGHT,
 }
 
+const ALL_DIRS: [Direction; 4] = [
+    Direction::UP,
+    Direction::RIGHT,
+    Direction::DOWN,
+    Direction::LEFT
+];
+
 impl Direction {
     pub fn oposite(&self) -> Direction {
         match self {
@@ -15,5 +22,9 @@ impl Direction {
             Direction::DOWN => Direction::UP,
             Direction::LEFT => Direction::RIGHT,
         }
+    }
+
+    pub fn all() -> &'static [Direction] {
+        &ALL_DIRS
     }
 }
