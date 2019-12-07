@@ -1,3 +1,5 @@
+use crate::point::Point;
+
 pub struct Matrix<T> {
     data: Vec<Vec<Option<T>>>,
     width: usize,
@@ -29,8 +31,16 @@ impl<T> Matrix<T> {
         self.data[x.to_usize().unwrap()][y.to_usize().unwrap()] = Some(v);
     }
 
+    pub fn set_pt(&mut self, pt: &Point, v: T) {
+        self.set(pt.x, pt.y, v);
+    }
+
     pub fn unset<V: num::ToPrimitive>(&mut self, x: V, y: V) {
         self.data[x.to_usize().unwrap()][y.to_usize().unwrap()] = None;
+    }
+
+    pub fn unset_pt(&mut self, pt: &Point) {
+        self.unset(pt.x, pt.y);
     }
 
     pub fn get<V: num::ToPrimitive>(&self, x: V, y: V) -> Option<&T> {
@@ -93,6 +103,14 @@ impl<T> Matrix<T> {
         }
 
         return elt.as_mut();
+    }
+
+    pub fn get_pt(&self, pt: &Point) -> Option<&T> {
+        self.get(pt.x, pt.y)
+    }
+
+    pub fn get_mut_pt(&mut self, pt: &Point) -> Option<&mut T> {
+        self.get_mut(pt.x, pt.y)
     }
 
     pub fn get_width(&self) -> usize {

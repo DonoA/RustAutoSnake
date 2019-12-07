@@ -34,7 +34,7 @@ fn get_snake_seg(curr: &Direction, next: Option<&Direction>) -> u64 {
 impl Snake {
     pub fn new(head: Point) -> Snake {
         Snake {
-            segment_dirs: vec![Direction::LEFT; 4000],
+            segment_dirs: vec![Direction::LEFT; 5],
             head: head,
         }
     }

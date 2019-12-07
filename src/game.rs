@@ -1,7 +1,7 @@
-use crate::snake::Snake;
-use crate::point::Point;
-use crate::hamiltonian_matrix::HamiltonMatrix;
 use crate::direction::Direction;
+use crate::hamiltonian_matrix::HamiltonMatrix;
+use crate::point::Point;
+use crate::snake::Snake;
 
 pub struct Game {
     snake: Snake,
@@ -16,20 +16,22 @@ pub struct Game {
     pub tick_speed: u32,
 }
 
+const SNAKE_HEAD: Point = Point { x: 10, y: 10 };
+
 impl Game {
     pub fn new(min_x: i32, min_y: i32, max_x: i32, max_y: i32) -> Game {
         let board_width = (max_x - min_x) as usize;
         let board_height = (max_y - min_y) as usize;
 
         if board_height % 2 != 0 {
-            println!("Bad board height");
+            panic!("Bad board height");
         }
 
         if board_width % 2 != 0 {
-            println!("Bad board width");
+            panic!("Bad board width");
         }
 
-        let snake = Snake::new(Point::new(10, 10));
+        let snake = Snake::new(SNAKE_HEAD);
 
         let mut gm = Game {
             snake: snake,
@@ -40,11 +42,11 @@ impl Game {
             max_x: max_x,
             max_y: max_y,
 
-            running: true,
+            running: false,
             tick_speed: 20,
         };
 
-        gm.apple = gm.random_point();
+        gm.apple = gm.new_apple_point();
         return gm;
     }
 
@@ -62,8 +64,12 @@ impl Game {
         // }
 
         if self.snake.get_head() == &self.apple {
+            let board_max = self.board.get_width() * self.board.get_height();
+            if self.snake.size() == board_max - 2 {
+                return false;
+            }
             self.snake.expand();
-            self.apple = self.random_point();
+            self.apple = self.new_apple_point();
         }
 
         return true;
@@ -71,25 +77,36 @@ impl Game {
 
     pub fn draw(&self) {
         ncurses::erase();
-        // mvprintw(0, 0, "Currently Running Snake... Exit with F1");
+        let ham_v = self
+            .board
+            .get(self.snake.get_head().x, self.snake.get_head().y)
+            .unwrap();
+        let apple_v = self.board.get(self.apple.x, self.apple.y).unwrap();
+
         ncurses::mvprintw(
             0,
             0,
             &format!(
-                "Apple={:?}, SnakeLen={:?}, Board={}x{}, Speed={}, HamV={}, AppleV={}",
+                "Apple={:?}, SnakeLen={:}, Board={}x{}, Speed={}, HamV={:03}, AppleV={:03}, HeadTail={:03}",
                 self.apple,
                 self.snake.size(),
                 self.board.get_width(),
                 self.board.get_height(),
                 self.tick_speed,
-                self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap(),
-                self.board.get(self.apple.x, self.apple.y).unwrap()
+                ham_v,
+                apple_v,
+                self.tail_mod_dist(*ham_v)
             ),
         );
         self.draw_border();
         // self.draw_cycle();
         self.snake.draw(self.min_x, self.min_y);
-        ncurses::mvhline(self.min_y + self.apple.y, self.min_y + self.apple.x, ncurses::ACS_DIAMOND(), 1);
+        ncurses::mvhline(
+            self.min_y + self.apple.y,
+            self.min_x + self.apple.x,
+            ncurses::ACS_CKBOARD(),
+            1,
+        );
         ncurses::refresh();
     }
 
@@ -138,24 +155,23 @@ impl Game {
     }
 
     pub fn move_snake(&mut self) {
-        let currid = *self.board.get(self.snake.get_head().x, self.snake.get_head().y).unwrap();
-        let tail_pos = self.snake.get_tail();
-        let tail_id = *self.board.get(tail_pos.x, tail_pos.y).unwrap_or(&1);
-        let apple_val = *self.board.get(self.apple.x, self.apple.y).unwrap();
-        let board_max = self.board.get_width() * self.board.get_height();
+        let currid = *self
+            .board
+            .get(self.snake.get_head().x, self.snake.get_head().y)
+            .unwrap();
+        let apple_val = *self.board.get(self.apple.x, self.apple.y).expect("Apple not on board");
 
         let mut closest_path: Option<(u32, Direction)> = None;
         for dir in Direction::all() {
             let test_pt = self.snake.get_head().dir_adj(dir);
 
             if let Some(other) = self.board.get(test_pt.x, test_pt.y) {
-                // don't go past apple 
+                // don't go past apple
                 if apple_val > currid && other > &apple_val {
                     continue;
                 }
-                
-                //    dont go backwards    dont enter small loops
-                if other < &currid || other - currid > (self.snake.size()/10) as u32 {
+                //    dont go backwards
+                if other < &currid {
                     continue;
                 }
 
@@ -169,7 +185,8 @@ impl Game {
                     continue;
                 }
 
-                if mod_dist(*other as i32, tail_id as i32, board_max as i32) < (self.snake.size()/10) as i32 {
+                // don't jump too close to tail
+                if self.tail_mod_dist(*other) < 5 {
                     continue;
                 }
 
@@ -201,7 +218,7 @@ impl Game {
         panic!("Reach end!");
     }
 
-    fn random_point(&self) -> Point {
+    fn new_apple_point(&self) -> Point {
         let x = rand::random::<u8>();
         let y = rand::random::<u8>();
 
@@ -221,24 +238,34 @@ impl Game {
         });
 
         if !allowed {
-            pos_point = self.random_point();
+            pos_point = self.new_apple_point();
         }
         return pos_point;
     }
-}
 
-fn true_mod(x: i32, mut m: i32) -> i32 {
-    if m < 0 {
-        m = -m;
+    fn tail_mod_dist(&self, test_val: u32) -> i32 {
+        let board_max = (self.board.get_width() * self.board.get_height()) as u32;
+        let tail_pos = self.snake.get_tail();
+        let tail_id = self
+            .board
+            .get(tail_pos.x, tail_pos.y)
+            .expect("Bad tail unwrap");
+        let head_id = self
+            .board
+            .get(self.snake.get_head().x, self.snake.get_head().y)
+            .unwrap();
+
+
+        let test_dist = if tail_id < head_id && tail_id < &test_val && head_id > &test_val {
+            -1
+        } else if tail_id > head_id && tail_id < &test_val && head_id < &test_val {
+            -1
+        } else if tail_id < &test_val {
+            ((board_max - test_val) + tail_id) as i32
+        } else {
+            (tail_id - test_val) as i32
+        };
+
+        return test_dist;
     }
-    let r = x % m;
-    return if r < 0 {
-        r + m
-    } else {
-        r
-    };
-}
-
-fn mod_dist(a: i32, b: i32, m: i32) -> i32 {
-    std::cmp::min(true_mod(a - b, m), true_mod(b - a, m))
 }
