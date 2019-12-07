@@ -26,4 +26,18 @@ impl Point {
             Direction::LEFT => { self.add(-1, 0) }
         }
     }
+
+    pub fn in_dir(&self, other: &Point) -> Direction {
+        if other.x == self.x {
+            if other.y < self.y {
+                Direction::UP
+            } else {
+                Direction::DOWN
+            }
+        } else if other.x < self.x {
+            Direction::LEFT
+        } else {
+            Direction::RIGHT
+        }
+    }
 }

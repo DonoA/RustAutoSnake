@@ -6,7 +6,7 @@ use crate::snake::Snake;
 use std::collections::HashSet;
 use std::f32;
 
-fn a_star_path(end: &Point, snake: &Snake, width: usize, height: usize) -> Option<Vec<Point>> {
+pub fn a_star_path(end: &Point, snake: &Snake, width: usize, height: usize) -> Option<Vec<Point>> {
     let mut snake_pts: Matrix<bool> = Matrix::new(width, height);
 
     snake.for_each_segment(|pt, _| {
@@ -35,6 +35,13 @@ fn a_star_path(end: &Point, snake: &Snake, width: usize, height: usize) -> Optio
 
         for dir in Direction::all() {
             let neighbor_pt = current.dir_adj(dir);
+            if neighbor_pt.x >= width as i32 || neighbor_pt.x < 0 {
+                continue;
+            }
+
+            if neighbor_pt.y < 0 || neighbor_pt.y >= height as i32 {
+                continue;
+            }
 
             if snake_pts.get_pt(&neighbor_pt).is_some() {
                 continue;
@@ -70,6 +77,8 @@ fn reconstruct_path(current: &Point, came_from: &Matrix<Point>) -> Vec<Point> {
             full_path.push(*current.unwrap());
         }
     }
+
+    full_path.reverse();
 
     return full_path;
 }

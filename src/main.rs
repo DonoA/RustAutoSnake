@@ -11,6 +11,7 @@ use crossbeam::channel::{unbounded, TryRecvError};
 use ncurses::*;
 use std::thread;
 use std::time::SystemTime;
+use backtrace::Backtrace;
 
 fn setup_ncurses() {
     /* Setup ncurses. */
@@ -27,6 +28,11 @@ fn setup_ncurses() {
 
 fn main() {
     setup_ncurses();
+
+    std::panic::set_hook(Box::new(|pl| {
+        endwin();
+        println!("{:?}", Backtrace::new());
+    }));
 
     let mut max_x = 0;
     let mut max_y = 0;
@@ -53,6 +59,7 @@ fn main() {
     });
 
     let mut running = true;
+    game.running = false;
     let mut last_tick = SystemTime::now();
 
     while running {
@@ -114,3 +121,7 @@ fn main() {
 
     endwin();
 }
+
+// fn main() {
+//     let mut game = Game::new(1, 2, 19 - 2, 16 - 2);
+// }
