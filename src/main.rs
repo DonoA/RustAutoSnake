@@ -12,6 +12,7 @@ use ncurses::*;
 use std::thread;
 use std::time::SystemTime;
 use backtrace::Backtrace;
+use std::env;
 
 fn setup_ncurses() {
     /* Setup ncurses. */
@@ -27,6 +28,7 @@ fn setup_ncurses() {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
     setup_ncurses();
 
     std::panic::set_hook(Box::new(|pl| {
@@ -46,8 +48,19 @@ fn main() {
         max_y -= 1;
     }
 
-    // let mut game = Game::new(1, 2, max_x-2, max_y-2);
-    let mut game = Game::new(1, 2, 19 - 2, 16 - 2, PathMode::HAMILTON);
+    let mut path_mode = PathMode::HAMILTON;
+    if let Some(pathn) = args.get(1) {
+        match pathn.as_ref() {
+            "astar" => { path_mode = PathMode::ASTAR },
+            "hamilton" => { path_mode = PathMode::HAMILTON },
+            _ => {
+                panic!("Unexpected Pathing Mode {}", pathn);
+            }
+        }
+    }
+
+    let mut game = Game::new(1, 2, max_x-2, max_y-2, path_mode);
+    // let mut game = Game::new(1, 2, 19 - 2, 16 - 2, PathMode::HAMILTON);
 
     let (trx, rev) = unbounded();
 

@@ -1,11 +1,13 @@
+use crate::a_star::a_star_path;
 use crate::direction::Direction;
 use crate::hamiltonian_matrix::HamiltonMatrix;
 use crate::point::Point;
 use crate::snake::Snake;
-use crate::a_star::a_star_path;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PathMode {
-    ASTAR, HAMILTON
+    ASTAR,
+    HAMILTON,
 }
 
 pub struct Game {
@@ -24,13 +26,12 @@ pub struct Game {
 
     pub running: bool,
     pub tick_speed: u32,
-    current_path_mode: PathMode
+    current_path_mode: PathMode,
 }
 
 const SNAKE_HEAD: Point = Point { x: 10, y: 10 };
 
 impl Game {
-
     pub fn new(min_x: i32, min_y: i32, max_x: i32, max_y: i32, path_mode: PathMode) -> Game {
         let board_width = (max_x - min_x) as usize;
         let board_height = (max_y - min_y) as usize;
@@ -64,11 +65,12 @@ impl Game {
             running: false,
             tick_speed: 20,
 
-            current_path_mode: path_mode
+            current_path_mode: path_mode,
         };
 
         gm.apple = gm.new_apple_point();
-        gm.a_star_path = a_star_path(&gm.apple, &gm.snake, board_width, board_height).expect("Bad path");
+        gm.a_star_path =
+            a_star_path(&gm.apple, &gm.snake, board_width, board_height).expect("Bad path");
         return gm;
     }
 
@@ -77,11 +79,15 @@ impl Game {
             return false;
         }
 
-        if self.min_x + self.snake.get_head().x < self.min_x || self.min_x + self.snake.get_head().x > self.max_x {
+        if self.min_x + self.snake.get_head().x < self.min_x
+            || self.min_x + self.snake.get_head().x > self.max_x
+        {
             return false;
         }
 
-        if self.min_y + self.snake.get_head().y < self.min_y || self.min_y + self.snake.get_head().y > self.max_y {
+        if self.min_y + self.snake.get_head().y < self.min_y
+            || self.min_y + self.snake.get_head().y > self.max_y
+        {
             return false;
         }
 
@@ -92,13 +98,20 @@ impl Game {
             }
             self.snake.expand();
             self.apple = self.new_apple_point();
-            let pos_path = a_star_path(&self.apple, &self.snake, self.board_width, self.board_height);
-            if pos_path.is_none() {
-                self.running = false;
-            } else {
-                self.a_star_path = pos_path.unwrap();
+            if self.current_path_mode == PathMode::ASTAR {
+                let pos_path = a_star_path(
+                    &self.apple,
+                    &self.snake,
+                    self.board_width,
+                    self.board_height,
+                );
+                if pos_path.is_none() {
+                    self.running = false;
+                } else {
+                    self.a_star_path = pos_path.unwrap();
+                }
+                self.a_star_current = 1;
             }
-            self.a_star_current = 1;
         }
 
         return true;
@@ -199,13 +212,16 @@ impl Game {
 
     pub fn move_snake(&mut self) {
         match self.current_path_mode {
-            PathMode::ASTAR => { self.move_snake_astar() }
-            PathMode::HAMILTON => { self.move_snake_ham() }
+            PathMode::ASTAR => self.move_snake_astar(),
+            PathMode::HAMILTON => self.move_snake_ham(),
         };
     }
 
     fn move_snake_astar(&mut self) {
-        let next_dir = self.snake.get_head().in_dir(&self.a_star_path[self.a_star_current]);
+        let next_dir = self
+            .snake
+            .get_head()
+            .in_dir(&self.a_star_path[self.a_star_current]);
         self.a_star_current += 1;
         self.snake.move_dir(&next_dir);
     }
@@ -215,7 +231,10 @@ impl Game {
             .ham_cycle
             .get(self.snake.get_head().x, self.snake.get_head().y)
             .unwrap();
-        let apple_val = *self.ham_cycle.get(self.apple.x, self.apple.y).expect("Apple not on board");
+        let apple_val = *self
+            .ham_cycle
+            .get(self.apple.x, self.apple.y)
+            .expect("Apple not on board");
 
         let mut closest_path: Option<(u32, Direction)> = None;
         for dir in Direction::all() {
@@ -310,7 +329,6 @@ impl Game {
             .ham_cycle
             .get(self.snake.get_head().x, self.snake.get_head().y)
             .unwrap();
-
 
         let test_dist = if tail_id < head_id && tail_id < &test_val && head_id > &test_val {
             -1
