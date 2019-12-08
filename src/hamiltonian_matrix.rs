@@ -4,9 +4,6 @@ use crate::point::Point;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-
 struct GridWeightNode {
     right: u8,
     down: u8,

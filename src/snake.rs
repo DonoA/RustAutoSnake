@@ -41,7 +41,7 @@ impl Snake {
 
     pub fn on_snake(&self, pt: Point) -> bool {
         let mut on = false;
-        self.for_each_segment(|other_pt, i| {
+        self.for_each_segment(|other_pt, _| {
             if other_pt == pt {
                 on = true;
             }

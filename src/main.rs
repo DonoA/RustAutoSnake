@@ -6,7 +6,7 @@ mod point;
 mod snake;
 mod a_star;
 
-use crate::game::Game;
+use crate::game::{Game, PathMode};
 use crossbeam::channel::{unbounded, TryRecvError};
 use ncurses::*;
 use std::thread;
@@ -47,7 +47,7 @@ fn main() {
     }
 
     // let mut game = Game::new(1, 2, max_x-2, max_y-2);
-    let mut game = Game::new(1, 2, 19 - 2, 16 - 2);
+    let mut game = Game::new(1, 2, 19 - 2, 16 - 2, PathMode::HAMILTON);
 
     let (trx, rev) = unbounded();
 
